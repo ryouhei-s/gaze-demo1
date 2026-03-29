@@ -2,81 +2,64 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neural Trace - Fullscreen Prototype</title>
+    <title>Neural Trace - Stable Demo</title>
     <style>
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #121212; }
-        
-        /* Figmaエリア：画面いっぱいに広げ、背景を黒に */
-        iframe { 
-            border: none; 
-            width: 100vw; 
-            height: 100vh; 
-            z-index: 1;
-            background: #121212;
-        }
-
-        /* 視線ポインタ：より「線（軌跡）」を意識したデザインに微調整 */
+        iframe { border: none; width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
         #gaze-pointer {
             position: absolute;
-            width: 12px;
-            height: 12px;
-            background: #00E5FF; /* Electric Cyan */
+            width: 25px; height: 25px;
+            background: rgba(0, 229, 255, 0.6);
             border-radius: 50%;
+            box-shadow: 0 0 20px #00E5FF;
             pointer-events: none;
-            /* ぼんやりとした光の広がり（オーラ） */
-            box-shadow: 0 0 15px 5px rgba(0, 229, 255, 0.6); 
-            transform: translate(-50%, -50%);
-            z-index: 9999;
-            /* スムージング：0.2秒の遅延で「彗星の尾」のような余韻を作る */
-            transition: left 0.2s cubic-bezier(0.1, 0.7, 1.0, 0.1), 
-                        top 0.2s cubic-bezier(0.1, 0.7, 1.0, 0.1);
+            z-index: 9999; /* Figmaより手前に表示 */
             display: none;
+            transform: translate(-50%, -50%);
+            transition: all 0.1s ease-out;
         }
+        /* ビデオプレビューを強制的に左上に小さく表示 */
+        #webgazerVideoContainer { z-index: 10000 !important; top: 10px !important; left: 10px !important; width: 160px !important; height: 120px !important; }
     </style>
 </head>
 <body>
 
     <div id="gaze-pointer"></div>
-
-    <iframe id="figma-iframe" src="https://www.figma.com/embed?embed_host=share&url=https://www.figma.com/design/eJxVGSSnMB3L4kTo9oknpB/%E3%82%A2%E3%83%97%E3%83%AA%E5%88%B6%E4%BD%9C%E8%AA%B2%E9%A1%8C?node-id=582-1267&t=aNVs9tgG4hIu91ld-1 &scaling=scale-down-fit&hide-footer=1" allowfullscreen></iframe>
+    <iframe id="figma-iframe" src="https://www.figma.com/embed?embed_host=share&url=【あなたのFigmaプロトタイプURL】&scaling=scale-down-fit&hide-footer=1" allowfullscreen></iframe>
 
     <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/webgazer/2.1.0/webgazer.min.js"></script>
-<script>
-    window.onload = async function() {
-        const pointer = document.getElementById('gaze-pointer');
 
-        // 1. 重要：AIモデルの参照先をインターネット上の公式サーバーに固定する
-        // これにより、GitHub内にmediapipeフォルダがなくても動くようになります
-        webgazer.setStaticRoot('https://webgazer.cs.brown.edu/data/');
+    <script>
+        window.onload = function() {
+            const pointer = document.getElementById('gaze-pointer');
 
-        // 2. 初期設定
-        await webgazer.setRegression('ridge'); 
-        
-        // 3. ビデオと予測ポイントを表示
-        webgazer.showVideo(true)
-                .showFaceOverlay(true)
-                .showPredictionPoints(true);
+            // 1. WebGazerの開始（最もシンプルな書き方）
+            webgazer.setGazeListener(function(data, elapsedTime) {
+                if (data == null) return;
+                
+                // ポインタを移動
+                pointer.style.display = 'block';
+                pointer.style.left = data.x + 'px';
+                pointer.style.top = data.y + 'px';
+            }).begin();
 
-        // 4. データの反映
-        webgazer.setGazeListener(function(data, elapsedTime) {
-            if (data == null) return;
-            pointer.style.display = 'block';
-            pointer.style.left = data.x + 'px';
-            pointer.style.top = data.y + 'px';
-        });
+            // 2. ビデオの表示設定
+            webgazer.showVideo(true).showFaceOverlay(true).showPredictionPoints(true);
 
-        // 5. 開始
-        await webgazer.begin(); 
+            // 3. Figma(iframe)の上でのクリックを学習させるための対策
+            // 画面をどこでもクリックするとAIが学習します
+            document.addEventListener('click', function(event) {
+                if(webgazer.isReady()) {
+                    webgazer.recordScreenClick(event.clientX, event.clientY);
+                    console.log("Clicked at:", event.clientX, event.clientY);
+                }
+            });
+        };
 
-        // 6. クリック学習の連携
-        window.addEventListener('click', (event) => {
-            webgazer.recordScreenClick(event.clientX, event.clientY);
-        });
-
-        console.log("WebGazer Fixed & Started.");
-    };
-</script>
+        // ページを閉じる時にカメラを止める
+        window.onbeforeunload = function() {
+            webgazer.end();
+        };
+    </script>
 </body>
 </html>
