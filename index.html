@@ -20,20 +20,29 @@
     <div id="gaze-pointer"></div>
 
     <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
-    <script>
-        window.onload = async function() {
-            const pointer = document.getElementById('gaze-pointer');
-            
-            // ファイルがリポジトリ内にあるので、特殊な設定なしで動くはずです
-            await webgazer.setGazeListener(function(data, elapsedTime) {
-                if (data == null) return;
-                pointer.style.display = 'block';
-                pointer.style.left = data.x + 'px';
-                pointer.style.top = data.y + 'px';
-            }).begin();
+<script>
+    window.onload = async function() {
+        const pointer = document.getElementById('gaze-pointer');
 
-            webgazer.showVideo(true).showFaceOverlay(true).showPredictionPoints(true);
-        };
-    </script>
+        // 404エラー対策の再確認
+        webgazer.params.staticRoot = './mediapipe/face_mesh/';
+
+        await webgazer.setGazeListener(function(data, elapsedTime) {
+            if (data == null) return;
+            pointer.style.display = 'block';
+            pointer.style.left = data.x + 'px';
+            pointer.style.top = data.y + 'px';
+        }).begin();
+
+        webgazer.showVideo(true).showFaceOverlay(true).showPredictionPoints(true);
+
+        // --- 🚨 修正箇所：学習用の命令を recordClick に変更 🚨 ---
+        document.addEventListener('mousedown', function(event) {
+            // webgazer.recordClick を使用します
+            webgazer.recordClick(event.clientX, event.clientY);
+            console.log("学習中: ", event.clientX, event.clientY);
+        });
+    };
+</script>
 </body>
 </html>
