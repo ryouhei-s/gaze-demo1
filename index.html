@@ -47,37 +47,35 @@
     window.onload = async function() {
         const pointer = document.getElementById('gaze-pointer');
 
-        // 1. WebGazerの初期設定
+        // 1. 重要：AIモデルの参照先をインターネット上の公式サーバーに固定する
+        // これにより、GitHub内にmediapipeフォルダがなくても動くようになります
+        webgazer.setStaticRoot('https://webgazer.cs.brown.edu/data/');
+
+        // 2. 初期設定
         await webgazer.setRegression('ridge'); 
         
-        // 2. 視線予測のドット（赤い点）と顔のメッシュを強制表示
+        // 3. ビデオと予測ポイントを表示
         webgazer.showVideo(true)
                 .showFaceOverlay(true)
-                .showFaceFeedbackBox(true)
-                .showPredictionPoints(true); // ★これをtrueにすると赤い点が出ます
+                .showPredictionPoints(true);
 
-        // 3. 視線データの取得と自作ポインタへの反映
+        // 4. データの反映
         webgazer.setGazeListener(function(data, elapsedTime) {
             if (data == null) return;
-            
-            // 自作のポインタ（シアンの光）を動かす
             pointer.style.display = 'block';
             pointer.style.left = data.x + 'px';
             pointer.style.top = data.y + 'px';
         });
 
-        // 4. 開始
+        // 5. 開始
         await webgazer.begin(); 
 
-        // 5. 重要：Figma(iframe)の上でもクリック学習を有効にする設定
-        // iframeがクリックを奪ってしまうため、一旦webgazerに「ここをクリックしたよ」と教える必要があります
+        // 6. クリック学習の連携
         window.addEventListener('click', (event) => {
-            // クリックした座標をWebGazerに学習させる
             webgazer.recordScreenClick(event.clientX, event.clientY);
-            console.log("Calibration point added at:", event.clientX, event.clientY);
         });
 
-        console.log("WebGazer Ready.");
+        console.log("WebGazer Fixed & Started.");
     };
 </script>
 </body>
