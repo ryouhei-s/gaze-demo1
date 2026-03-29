@@ -2,23 +2,16 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Neural Trace - Working Demo</title>
+    <title>Neural Trace - Final Setup</title>
     <style>
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #121212; }
         iframe { border: none; width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
         #gaze-pointer {
-            position: absolute;
-            width: 25px; height: 25px;
-            background: rgba(0, 229, 255, 0.6);
-            border-radius: 50%;
-            box-shadow: 0 0 20px #00E5FF;
-            pointer-events: none;
-            z-index: 9999;
-            display: none;
-            transform: translate(-50%, -50%);
-            transition: all 0.1s ease-out;
+            position: absolute; width: 25px; height: 25px;
+            background: rgba(0, 229, 255, 0.6); border-radius: 50%;
+            box-shadow: 0 0 20px #00E5FF; pointer-events: none;
+            z-index: 9999; display: none; transform: translate(-50%, -50%);
         }
-        /* ビデオの表示位置を強制 */
         #webgazerVideoContainer { z-index: 10000 !important; }
     </style>
 </head>
@@ -30,36 +23,34 @@
     <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
 
     <script>
-        window.onload = async function() {
+        // 1. ページ読み込み時に即座に設定を注入
+        window.addEventListener('load', async function() {
             const pointer = document.getElementById('gaze-pointer');
 
-            // --- 🚨 ここが最重要：404エラーを防ぐ設定 🚨 ---
-            // WebGazerに必要なファイルを外部サーバーから強制的に読み込ませます
+            // --- 🚨 404エラー対策の決定版 🚨 ---
+            // 起動前にパラメータを上書きします
             webgazer.params.staticRoot = 'https://webgazer.cs.brown.edu/data/';
 
-            // 1. リスナーの設定
-            webgazer.setGazeListener(function(data, elapsedTime) {
+            // 2. リスナーと初期設定を済ませてから begin()
+            await webgazer.setGazeListener(function(data, elapsedTime) {
                 if (data == null) return;
                 pointer.style.display = 'block';
                 pointer.style.left = data.x + 'px';
                 pointer.style.top = data.y + 'px';
-            });
+            }).begin();
 
-            // 2. 開始
-            await webgazer.begin();
-
-            // 3. ビデオなどの表示設定
+            // 3. 表示設定を適用
             webgazer.showVideo(true)
                     .showFaceOverlay(true)
                     .showPredictionPoints(true);
 
-            // 4. クリック学習の設定
+            // 4. Figma上のクリックを検知して学習させる
             document.addEventListener('click', function(event) {
                 webgazer.recordScreenClick(event.clientX, event.clientY);
             });
 
-            console.log("WebGazer Started with Fix.");
-        };
+            console.log("WebGazer is now running with forced static root.");
+        });
     </script>
 </body>
 </html>
