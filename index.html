@@ -2,59 +2,38 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Neural Trace - Ultimate Fix</title>
+    <title>Neural Trace - Local Files Demo</title>
     <style>
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #000; }
-        #target-design { width: 100vw; height: 100vh; object-fit: contain; position: absolute; top: 0; left: 0; z-index: 1; }
+        #target-design { width: 100vw; height: 100vh; object-fit: contain; position: absolute; z-index: 1; }
         #gaze-pointer {
             position: absolute; width: 25px; height: 25px;
             background: rgba(0, 229, 255, 0.6); border-radius: 50%;
             box-shadow: 0 0 20px #00E5FF; pointer-events: none;
             z-index: 9999; display: none; transform: translate(-50%, -50%);
-            transition: all 0.1s ease-out;
         }
-        #webgazerVideoContainer { z-index: 10000 !important; border: 2px solid #00E5FF; border-radius: 8px; }
+        #webgazerVideoContainer { z-index: 10000 !important; }
     </style>
 </head>
 <body>
-
     <img id="target-design" src="design.png">
     <div id="gaze-pointer"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/webgazer@2.1.0/dist/webgazer.min.js"></script>
-
+    <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
     <script>
-        window.addEventListener('load', async function() {
+        window.onload = async function() {
             const pointer = document.getElementById('gaze-pointer');
+            
+            // ファイルがリポジトリ内にあるので、特殊な設定なしで動くはずです
+            await webgazer.setGazeListener(function(data, elapsedTime) {
+                if (data == null) return;
+                pointer.style.display = 'block';
+                pointer.style.left = data.x + 'px';
+                pointer.style.top = data.y + 'px';
+            }).begin();
 
-            // --- 🚨 404エラーを根絶する設定 🚨 ---
-            // 内部のデータ参照先をGoogleの公式サーバー(CDN)に強制的に向け直します
-            webgazer.params.mediapipeFacemeshOpts = {
-                locateFile: (file) => {
-                    return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
-                }
-            };
-
-            try {
-                await webgazer.setGazeListener(function(data, elapsedTime) {
-                    if (data == null) return;
-                    pointer.style.display = 'block';
-                    pointer.style.left = data.x + 'px';
-                    pointer.style.top = data.y + 'px';
-                }).begin();
-
-                webgazer.showVideo(true).showFaceOverlay(true).showPredictionPoints(true);
-                console.log("WebGazer initialized with CDN successfully.");
-
-            } catch (e) {
-                console.error("WebGazer failed:", e);
-            }
-
-            // クリックで学習
-            document.addEventListener('mousedown', (event) => {
-                webgazer.recordScreenClick(event.clientX, event.clientY);
-            });
-        });
+            webgazer.showVideo(true).showFaceOverlay(true).showPredictionPoints(true);
+        };
     </script>
 </body>
 </html>
