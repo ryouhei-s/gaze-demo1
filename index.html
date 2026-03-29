@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Neural Trace - Stable Demo</title>
+    <title>Neural Trace - Working Demo</title>
     <style>
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #121212; }
         iframe { border: none; width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
@@ -13,52 +13,52 @@
             border-radius: 50%;
             box-shadow: 0 0 20px #00E5FF;
             pointer-events: none;
-            z-index: 9999; /* Figmaより手前に表示 */
+            z-index: 9999;
             display: none;
             transform: translate(-50%, -50%);
             transition: all 0.1s ease-out;
         }
-        /* ビデオプレビューを強制的に左上に小さく表示 */
-        #webgazerVideoContainer { z-index: 10000 !important; top: 10px !important; left: 10px !important; width: 160px !important; height: 120px !important; }
+        /* ビデオの表示位置を強制 */
+        #webgazerVideoContainer { z-index: 10000 !important; }
     </style>
 </head>
 <body>
 
     <div id="gaze-pointer"></div>
-    <iframe id="figma-iframe" src="https://www.figma.com/embed?embed_host=share&url= https://www.figma.com/design/eJxVGSSnMB3L4kTo9oknpB/%E3%82%A2%E3%83%97%E3%83%AA%E5%88%B6%E4%BD%9C%E8%AA%B2%E9%A1%8C?node-id=582-1267&t=aNVs9tgG4hIu91ld-1 &scaling=scale-down-fit&hide-footer=1" allowfullscreen></iframe>
+    <iframe id="figma-iframe" src="https://www.figma.com/embed?embed_host=share&url=https://www.figma.com/design/eJxVGSSnMB3L4kTo9oknpB/%E3%82%A2%E3%83%97%E3%83%AA%E5%88%B6%E4%BD%9C%E8%AA%B2%E9%A1%8C?node-id=582-1267&t=aNVs9tgG4hIu91ld-1" allowfullscreen></iframe>
 
     <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
 
     <script>
-        window.onload = function() {
+        window.onload = async function() {
             const pointer = document.getElementById('gaze-pointer');
 
-            // 1. WebGazerの開始（最もシンプルな書き方）
+            // --- 🚨 ここが最重要：404エラーを防ぐ設定 🚨 ---
+            // WebGazerに必要なファイルを外部サーバーから強制的に読み込ませます
+            webgazer.params.staticRoot = 'https://webgazer.cs.brown.edu/data/';
+
+            // 1. リスナーの設定
             webgazer.setGazeListener(function(data, elapsedTime) {
                 if (data == null) return;
-                
-                // ポインタを移動
                 pointer.style.display = 'block';
                 pointer.style.left = data.x + 'px';
                 pointer.style.top = data.y + 'px';
-            }).begin();
-
-            // 2. ビデオの表示設定
-            webgazer.showVideo(true).showFaceOverlay(true).showPredictionPoints(true);
-
-            // 3. Figma(iframe)の上でのクリックを学習させるための対策
-            // 画面をどこでもクリックするとAIが学習します
-            document.addEventListener('click', function(event) {
-                if(webgazer.isReady()) {
-                    webgazer.recordScreenClick(event.clientX, event.clientY);
-                    console.log("Clicked at:", event.clientX, event.clientY);
-                }
             });
-        };
 
-        // ページを閉じる時にカメラを止める
-        window.onbeforeunload = function() {
-            webgazer.end();
+            // 2. 開始
+            await webgazer.begin();
+
+            // 3. ビデオなどの表示設定
+            webgazer.showVideo(true)
+                    .showFaceOverlay(true)
+                    .showPredictionPoints(true);
+
+            // 4. クリック学習の設定
+            document.addEventListener('click', function(event) {
+                webgazer.recordScreenClick(event.clientX, event.clientY);
+            });
+
+            console.log("WebGazer Started with Fix.");
         };
     </script>
 </body>
