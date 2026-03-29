@@ -2,62 +2,68 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Neural Trace - Image Base Demo</title>
+    <title>Neural Trace - Final Fixed Demo</title>
     <style>
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #000; }
-        
-        /* 背景画像の設定：画面中央にピッタリ配置 */
-        #target-design {
-            width: 100vw;
-            height: 100vh;
-            object-fit: contain; /* 画像を画面内に収める */
-            position: absolute;
-            top: 0; left: 0;
-            z-index: 1;
-        }
-
+        #target-design { width: 100vw; height: 100vh; object-fit: contain; position: absolute; top: 0; left: 0; z-index: 1; }
         #gaze-pointer {
             position: absolute; width: 25px; height: 25px;
             background: rgba(0, 229, 255, 0.6); border-radius: 50%;
             box-shadow: 0 0 20px #00E5FF; pointer-events: none;
             z-index: 9999; display: none; transform: translate(-50%, -50%);
-            transition: all 0.1s ease-out;
         }
-        
-        #webgazerVideoContainer { z-index: 10000 !important; border-radius: 8px; overflow: hidden; }
-        #status-msg { color: #00E5FF; position: absolute; bottom: 20px; width: 100%; text-align: center; z-index: 2; font-family: sans-serif; }
+        /* ビデオを確実に表示 */
+        #webgazerVideoContainer { z-index: 10000 !important; display: block !important; }
     </style>
 </head>
 <body>
 
     <img id="target-design" src="design.png">
-
     <div id="gaze-pointer"></div>
-    <div id="status-msg">画面内の要素をクリックしながら、そこをじっと見て調整してください</div>
 
     <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
 
     <script>
-        window.onload = async function() {
+        // ページが読み込まれたら実行
+        window.addEventListener('load', async function() {
             const pointer = document.getElementById('gaze-pointer');
 
-            // 404エラー対策の設定
-            webgazer.params.staticRoot = 'https://webgazer.cs.brown.edu/data/';
+            try {
+                // 🚨 404エラーを強制的に回避する唯一の方法 🚨
+                // WebGazerが内部で持っている「探し場所」の変数を、起動の瞬間に上書きします
+                const originalStaticRoot = 'https://webgazer.cs.brown.edu/data/';
+                
+                // 1. WebGazerを一時停止状態で設定
+                webgazer.params.staticRoot = originalStaticRoot;
+                
+                // 2. 視線リスナーを設定
+                webgazer.setGazeListener(function(data, elapsedTime) {
+                    if (data == null) return;
+                    pointer.style.display = 'block';
+                    pointer.style.left = data.x + 'px';
+                    pointer.style.top = data.y + 'px';
+                });
 
-            await webgazer.setGazeListener(function(data, elapsedTime) {
-                if (data == null) return;
-                pointer.style.display = 'block';
-                pointer.style.left = data.x + 'px';
-                pointer.style.top = data.y + 'px';
-            }).begin();
+                // 3. 強制的に開始
+                await webgazer.begin();
 
-            webgazer.showVideo(true).showFaceOverlay(true).showPredictionPoints(true);
+                // 4. 表示オプション
+                webgazer.showVideo(true)
+                        .showFaceOverlay(true)
+                        .showPredictionPoints(true);
 
-            // 画面クリックで学習
+                console.log("WebGazer started successfully.");
+
+            } catch (e) {
+                console.error("WebGazer failed to start:", e);
+                alert("カメラの起動に失敗しました。ページを再読み込みして、画面をクリックしてください。");
+            }
+
+            // クリックで学習
             document.addEventListener('mousedown', function(event) {
                 webgazer.recordScreenClick(event.clientX, event.clientY);
             });
-        };
+        });
     </script>
 </body>
 </html>
