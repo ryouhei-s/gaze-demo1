@@ -12,7 +12,12 @@
             box-shadow: 0 0 20px #00E5FF; pointer-events: none;
             z-index: 9999; display: none; transform: translate(-50%, -50%);
         }
-        #webgazerVideoContainer { z-index: 10000 !important; }
+        /* ビデオコンテナの表示位置調整 */
+        #webgazerVideoContainer { 
+            top: 10px !important; 
+            left: 10px !important; 
+            z-index: 10000 !important; 
+        }
     </style>
 </head>
 <body>
@@ -24,23 +29,30 @@
     window.onload = async function() {
         const pointer = document.getElementById('gaze-pointer');
 
-        // 404エラー対策の再確認
+        // ファイルパスの設定
         webgazer.params.staticRoot = './mediapipe/face_mesh/';
 
         await webgazer.setGazeListener(function(data, elapsedTime) {
-            if (data == null) return;
+            if (data == null) {
+                pointer.style.display = 'none';
+                return;
+            }
             pointer.style.display = 'block';
             pointer.style.left = data.x + 'px';
             pointer.style.top = data.y + 'px';
         }).begin();
 
-        webgazer.showVideo(true).showFaceOverlay(true).showPredictionPoints(true);
+        // プレビュー設定
+        webgazer.showVideo(true)
+                .showFaceOverlay(true)
+                .showPredictionPoints(true);
 
-        // --- 🚨 修正箇所：学習用の命令を recordClick に変更 🚨 ---
+        // --- ✅ 修正箇所：recordClick を廃止し、正しい学習命令に変更 ---
         document.addEventListener('mousedown', function(event) {
-            // webgazer.recordClick を使用します
-            webgazer.recordClick(event.clientX, event.clientY);
-            console.log("学習中: ", event.clientX, event.clientY);
+            // 現在のWebGazerでは recordScreenPosition を使用します
+            // 第3引数に 'click' を渡すことでクリック地点を学習させます
+            webgazer.recordScreenPosition(event.clientX, event.clientY, 'click');
+            console.log("学習データを送信しました: ", event.clientX, event.clientY);
         });
     };
 </script>
