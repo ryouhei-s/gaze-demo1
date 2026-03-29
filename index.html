@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Neural Trace - Final Fixed Demo</title>
+    <title>Neural Trace - Ultimate Fix</title>
     <style>
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #000; }
         #target-design { width: 100vw; height: 100vh; object-fit: contain; position: absolute; top: 0; left: 0; z-index: 1; }
@@ -11,9 +11,9 @@
             background: rgba(0, 229, 255, 0.6); border-radius: 50%;
             box-shadow: 0 0 20px #00E5FF; pointer-events: none;
             z-index: 9999; display: none; transform: translate(-50%, -50%);
+            transition: all 0.1s ease-out;
         }
-        /* ビデオを確実に表示 */
-        #webgazerVideoContainer { z-index: 10000 !important; display: block !important; }
+        #webgazerVideoContainer { z-index: 10000 !important; border: 2px solid #00E5FF; border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -21,46 +21,37 @@
     <img id="target-design" src="design.png">
     <div id="gaze-pointer"></div>
 
-    <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/webgazer@2.1.0/dist/webgazer.min.js"></script>
 
     <script>
-        // ページが読み込まれたら実行
         window.addEventListener('load', async function() {
             const pointer = document.getElementById('gaze-pointer');
 
+            // --- 🚨 404エラーを根絶する設定 🚨 ---
+            // 内部のデータ参照先をGoogleの公式サーバー(CDN)に強制的に向け直します
+            webgazer.params.mediapipeFacemeshOpts = {
+                locateFile: (file) => {
+                    return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+                }
+            };
+
             try {
-                // 🚨 404エラーを強制的に回避する唯一の方法 🚨
-                // WebGazerが内部で持っている「探し場所」の変数を、起動の瞬間に上書きします
-                const originalStaticRoot = 'https://webgazer.cs.brown.edu/data/';
-                
-                // 1. WebGazerを一時停止状態で設定
-                webgazer.params.staticRoot = originalStaticRoot;
-                
-                // 2. 視線リスナーを設定
-                webgazer.setGazeListener(function(data, elapsedTime) {
+                await webgazer.setGazeListener(function(data, elapsedTime) {
                     if (data == null) return;
                     pointer.style.display = 'block';
                     pointer.style.left = data.x + 'px';
                     pointer.style.top = data.y + 'px';
-                });
+                }).begin();
 
-                // 3. 強制的に開始
-                await webgazer.begin();
-
-                // 4. 表示オプション
-                webgazer.showVideo(true)
-                        .showFaceOverlay(true)
-                        .showPredictionPoints(true);
-
-                console.log("WebGazer started successfully.");
+                webgazer.showVideo(true).showFaceOverlay(true).showPredictionPoints(true);
+                console.log("WebGazer initialized with CDN successfully.");
 
             } catch (e) {
-                console.error("WebGazer failed to start:", e);
-                alert("カメラの起動に失敗しました。ページを再読み込みして、画面をクリックしてください。");
+                console.error("WebGazer failed:", e);
             }
 
             // クリックで学習
-            document.addEventListener('mousedown', function(event) {
+            document.addEventListener('mousedown', (event) => {
                 webgazer.recordScreenClick(event.clientX, event.clientY);
             });
         });
