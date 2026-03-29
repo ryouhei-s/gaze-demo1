@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Trace - Fullscreen Prototype</title>
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #121212; }
+        
+        /* Figmaエリア：画面いっぱいに広げ、背景を黒に */
+        iframe { 
+            border: none; 
+            width: 100vw; 
+            height: 100vh; 
+            z-index: 1;
+            background: #121212;
+        }
+
+        /* 視線ポインタ：より「線（軌跡）」を意識したデザインに微調整 */
+        #gaze-pointer {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #00E5FF; /* Electric Cyan */
+            border-radius: 50%;
+            pointer-events: none;
+            /* ぼんやりとした光の広がり（オーラ） */
+            box-shadow: 0 0 15px 5px rgba(0, 229, 255, 0.6); 
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            /* スムージング：0.2秒の遅延で「彗星の尾」のような余韻を作る */
+            transition: left 0.2s cubic-bezier(0.1, 0.7, 1.0, 0.1), 
+                        top 0.2s cubic-bezier(0.1, 0.7, 1.0, 0.1);
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="gaze-pointer"></div>
+
+    <iframe id="figma-iframe" src="https://www.figma.com/embed?embed_host=share&url=https://www.figma.com/design/eJxVGSSnMB3L4kTo9oknpB/%E3%82%A2%E3%83%97%E3%83%AA%E5%88%B6%E4%BD%9C%E8%AA%B2%E9%A1%8C?node-id=582-1267&t=aNVs9tgG4hIu91ld-1 &scaling=scale-down-fit&hide-footer=1" allowfullscreen></iframe>
+
+    <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/webgazer/2.1.0/webgazer.min.js"></script>
+<script>
+    window.onload = async function() {
+        const pointer = document.getElementById('gaze-pointer');
+
+        // 1. WebGazerの初期設定
+        await webgazer.setRegression('ridge'); 
+        
+        // 2. 視線予測のドット（赤い点）と顔のメッシュを強制表示
+        webgazer.showVideo(true)
+                .showFaceOverlay(true)
+                .showFaceFeedbackBox(true)
+                .showPredictionPoints(true); // ★これをtrueにすると赤い点が出ます
+
+        // 3. 視線データの取得と自作ポインタへの反映
+        webgazer.setGazeListener(function(data, elapsedTime) {
+            if (data == null) return;
+            
+            // 自作のポインタ（シアンの光）を動かす
+            pointer.style.display = 'block';
+            pointer.style.left = data.x + 'px';
+            pointer.style.top = data.y + 'px';
+        });
+
+        // 4. 開始
+        await webgazer.begin(); 
+
+        // 5. 重要：Figma(iframe)の上でもクリック学習を有効にする設定
+        // iframeがクリックを奪ってしまうため、一旦webgazerに「ここをクリックしたよ」と教える必要があります
+        window.addEventListener('click', (event) => {
+            // クリックした座標をWebGazerに学習させる
+            webgazer.recordScreenClick(event.clientX, event.clientY);
+            console.log("Calibration point added at:", event.clientX, event.clientY);
+        });
+
+        console.log("WebGazer Ready.");
+    };
+</script>
+</body>
+</html>
